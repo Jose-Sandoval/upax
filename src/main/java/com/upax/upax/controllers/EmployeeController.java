@@ -1,9 +1,8 @@
 package com.upax.upax.controllers;
 
 import com.upax.upax.models.Employee;
-import com.upax.upax.models.Gender;
 import com.upax.upax.models.Job;
-import com.upax.upax.models.Response;
+import com.upax.upax.models.responses.ResponseEmployees;
 import com.upax.upax.service.EmployeService;
 import com.upax.upax.service.GenderService;
 import com.upax.upax.service.JobService;
@@ -13,8 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.Month;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @RestController
@@ -43,8 +40,8 @@ public class EmployeeController {
     }
 
     @PostMapping("/save")
-    public ResponseEntity<Response> save(@RequestBody Employee employee){
-        Response response = new Response();
+    public ResponseEntity<ResponseEmployees.Response> save(@RequestBody Employee employee){
+        ResponseEmployees.Response response = new ResponseEmployees.Response();
         //System.out.println(employeService.findByNameAndLastName(employee.getName(), employee.getLastName()));
         if (obtenerAnios(employee.getBirthdate())>17
                 && (employeService.findByNameAndLastName(employee.getName(), employee.getLastName())).size()<1
@@ -60,14 +57,23 @@ public class EmployeeController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
-    @PostMapping("jobs")
-    public ResponseEntity<List <Employee>> listEmployeeByJob(@RequestBody Job job){
-        List <Employee> employees = new ArrayList<>();
-        if (null!= jobService.getJob(job.getId())){
-            employees = employeService.findByJob(Job.builder().id(job.getId()).build());
-            return ResponseEntity.ok(employees);
-        }else
+    @PostMapping("/jobs")
+    public ResponseEntity<ResponseEmployees> listEmployeeByJob(@RequestBody Job job){
+        ResponseEmployees responseEmployees = new ResponseEmployees();
+        if(null != job.getId()) {
+            System.out.println(job);
+
+            if (null != jobService.getJob(job.getId())) {
+                responseEmployees.setEmployees(employeService.findByJob(Job.builder().id(job.getId()).build()));
+                responseEmployees.setSuccess(true);
+                return ResponseEntity.ok(responseEmployees);
+            } else
+                responseEmployees.setSuccess(false);
+            return ResponseEntity.ok(responseEmployees);
+        }else {
+            System.out.println("job no valido");
             return null;
+        }
     }
 
     public static int obtenerAnios(Date cumple) {

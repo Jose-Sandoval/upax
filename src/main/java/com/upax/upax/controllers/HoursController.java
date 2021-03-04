@@ -2,6 +2,8 @@ package com.upax.upax.controllers;
 
 import com.upax.upax.models.EmployeeWork;
 import com.upax.upax.models.Hours;
+import com.upax.upax.models.responses.Payments;
+import com.upax.upax.models.responses.WorkedHousr;
 import com.upax.upax.service.EmployeService;
 import com.upax.upax.service.HoursService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.text.SimpleDateFormat;
 import java.sql.Date;
-import java.util.List;
 
 @RestController
 @RequestMapping(value = "/hours")
@@ -35,17 +36,41 @@ public class HoursController {
     }
 
     @PostMapping("/count")
-    public ResponseEntity<Integer> contar(@RequestBody EmployeeWork employeeWork){
+    public ResponseEntity<WorkedHousr> contar(@RequestBody EmployeeWork employeeWork){
+        WorkedHousr workedHousr = new WorkedHousr();
+        Integer hours;
         System.out.println(employeeWork);
-        return ResponseEntity.ok(hoursService.countHours(employeeWork.getEmployee_id(),employeeWork.getStart_date(), employeeWork.getEnd_date()));
+        if(null != employeService.getEmployee(employeeWork.getEmployee_id()) && employeeWork.getStart_date().before(employeeWork.getEnd_date()) ){
+            hours  = hoursService.countHours(employeeWork.getEmployee_id(),
+                    employeeWork.getStart_date(),
+                    employeeWork.getEnd_date());
+            if (null!=hours){
+                workedHousr.setTotal_worked_hours(hours);
+                workedHousr.setSuccess(true);
+            }else
+                workedHousr.setSuccess(false);
+            return ResponseEntity.ok(workedHousr);
+        }else
+            workedHousr.setSuccess(false);
+        return ResponseEntity.ok(workedHousr);
     }
 
     @PostMapping("/amount")
-    public ResponseEntity<Double> sumar(@RequestBody EmployeeWork employeeWork){
+    public ResponseEntity<Payments> sumar(@RequestBody EmployeeWork employeeWork){
         System.out.println(employeeWork);
-        Integer horas = hoursService.countHours(employeeWork.getEmployee_id(), employeeWork.getStart_date(), employeeWork.getEnd_date());
-        Double salary = employeService.getEmployee(employeeWork.getEmployee_id()).getJob().getSalary();
-        return ResponseEntity.ok(horas*salary);
+        Payments payments = new Payments();
+        if(null != employeService.getEmployee(employeeWork.getEmployee_id()) && employeeWork.getStart_date().before(employeeWork.getEnd_date()) ){
+            Integer horas = hoursService.countHours(employeeWork.getEmployee_id(), employeeWork.getStart_date(), employeeWork.getEnd_date());
+            Double salary = employeService.getEmployee(employeeWork.getEmployee_id()).getJob().getSalary();
+            if (null!= horas && null != salary) {
+                payments.setPayment(horas * salary);
+                payments.setSuccess(true);
+            }else
+                payments.setSuccess(false);
+            return ResponseEntity.ok(payments);
+        }else
+            payments.setSuccess(false);
+        return ResponseEntity.ok(payments);
     }
 
     public String validation(){
